@@ -30,7 +30,7 @@
       object-fit: contain;
     }
 
-    /* --- YouTube Theme CSS (same as yours) --- */
+    /* --- YouTube Theme CSS --- */
     @font-face {
       font-family: 'Roboto';
       font-style: normal;
@@ -292,14 +292,6 @@
       transform: translate(-50%, -50%) scale(1.05);
     }
 
-    #myLogo {
-      width:60px;
-      height:40px;
-      position: absolute;
-      right: 5px;
-      top: 10px;
-      z-index: 1500;
-    }
     #channelTitle {
       position: absolute;
       left: 10px;
@@ -311,6 +303,24 @@
       padding: 4px 8px;
       border-radius: 4px;
     }
+
+    /* Watermark Logo - Bottom Left, Subtle */
+    #watermarkLogo {
+      position: absolute;
+      left: 10px;
+      bottom: 55px; /* sits just above the control bar */
+      width: 60px;
+      height: auto;
+      opacity: 0.35;
+      z-index: 1500;
+      pointer-events: none; /* so it doesn't block clicks */
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+      transition: opacity 0.3s ease;
+    }
+    /* Slightly more visible on hover over the player */
+    .shaka-video-container:hover #watermarkLogo {
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
@@ -321,7 +331,9 @@
   </video>
 
   <div id="channelTitle"></div>
-  <!-- <img id="myLogo" src="https://image.ashlynn.workers.dev/ugxsvtrvrjtrtatcmynhknsbykfqgomo"> -->
+
+  <!-- Watermark Logo - Bottom Left -->
+  <img id="watermarkLogo" src="https://graph.org/file/256f06f0f82ce55204263-a3e34be0a2b7a7d6dd.jpg" alt="">
 
   <div class="manual-play-button" id="manualPlayButton">
     ▶ Click to Play
