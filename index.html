@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JioPlayer</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
@@ -31,7 +32,6 @@
     }
 
     /* YouTube Theme */
-    .youtube-theme { font-family: 'Roboto', sans-serif; }
     .youtube-theme .shaka-bottom-controls {
       width: 100%; padding: 0; z-index: 1;
       display: flex; flex-direction: column;
@@ -59,8 +59,6 @@
     .youtube-theme .shaka-seek-bar-container:hover .shaka-range-element { opacity: 1; cursor: pointer; }
     .youtube-theme .shaka-seek-bar-container input[type=range]::-webkit-slider-thumb { background: #FF0000; cursor: pointer; }
     .youtube-theme .shaka-seek-bar-container input[type=range]::-moz-range-thumb { background: #FF0000; cursor: pointer; }
-    .youtube-theme .shaka-video-container * { font-family: 'Roboto', sans-serif; }
-    .youtube-theme .shaka-video-container .material-icons-round { font-family: 'Material Icons Sharp'; }
     .youtube-theme .shaka-overflow-menu,
     .youtube-theme .shaka-settings-menu {
       border-radius: 2px; background: rgba(28,28,28,.9);
@@ -107,34 +105,17 @@
       display: none !important; visibility: hidden !important; opacity: 0 !important;
     }
 
-    /* ── CLICK-TO-PLAY OVERLAY ──
-       THE core fix: browsers (Chrome, Safari, Firefox) block video.play()
-       inside cross-origin iframes unless triggered by a real user gesture.
-       We stop fighting the browser and instead always show this overlay.
-       The click on this overlay IS the user gesture — play() always works then. */
+    /* Click-to-play overlay */
     #playOverlay {
-      position: absolute;
-      inset: 0;
-      z-index: 3000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 18px;
+      position: absolute; inset: 0; z-index: 3000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
       cursor: pointer;
-      background: linear-gradient(
-        to bottom,
-        rgba(0,0,0,0.3) 0%,
-        rgba(0,0,0,0.6) 100%
-      );
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
     }
-    #playOverlay.fade-out {
-      animation: fadeOut 0.4s ease forwards;
-      pointer-events: none;
-    }
+    #playOverlay.fade-out { animation: fadeOut 0.4s ease forwards; pointer-events: none; }
     @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
 
-    /* Loading ring — shown while stream loads */
     .ring {
       width: 54px; height: 54px;
       border: 4px solid rgba(255,255,255,0.15);
@@ -144,14 +125,10 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Play button — shown when stream is ready */
     #playBtn {
-      display: none;
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      background: rgba(255, 0, 0, 0.92);
-      align-items: center;
-      justify-content: center;
+      display: none; width: 80px; height: 80px;
+      border-radius: 50%; background: rgba(255,0,0,0.92);
+      align-items: center; justify-content: center;
       box-shadow: 0 0 0 0 rgba(255,0,0,0.45);
       animation: pulse 2.2s infinite;
       transition: transform 0.15s ease;
@@ -160,63 +137,45 @@
     #playBtn:hover { transform: scale(1.1); }
     @keyframes pulse {
       0%   { box-shadow: 0 0 0 0   rgba(255,0,0,0.45); }
-      70%  { box-shadow: 0 0 0 22px rgba(255,0,0,0);    }
-      100% { box-shadow: 0 0 0 0   rgba(255,0,0,0);    }
+      70%  { box-shadow: 0 0 0 22px rgba(255,0,0,0); }
+      100% { box-shadow: 0 0 0 0   rgba(255,0,0,0); }
     }
 
     .overlay-label {
-      color: rgba(255,255,255,0.85);
-      font-size: 14px;
-      letter-spacing: 0.05em;
-      text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+      color: rgba(255,255,255,0.85); font-size: 14px;
+      letter-spacing: 0.05em; text-shadow: 0 1px 6px rgba(0,0,0,0.9);
     }
 
-    /* Channel title */
     #channelTitle {
-      position: absolute;
-      left: 10px; top: 10px;
-      color: #fff; font-size: 14px;
-      z-index: 1500;
-      background: rgba(0,0,0,0.6);
-      padding: 4px 8px;
-      border-radius: 4px;
-      pointer-events: none;
+      position: absolute; left: 10px; top: 10px;
+      color: #fff; font-size: 14px; z-index: 1500;
+      background: rgba(0,0,0,0.6); padding: 4px 8px;
+      border-radius: 4px; pointer-events: none;
     }
 
-    /* Watermark */
     #watermarkLogo {
-      position: absolute;
-      left: 10px; top: 62%;
+      position: absolute; left: 10px; top: 62%;
       width: 60px; height: auto;
-      opacity: 0.35; z-index: 1500;
-      pointer-events: none;
+      opacity: 0.35; z-index: 1500; pointer-events: none;
       filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
       transition: opacity 0.3s ease;
     }
     .shaka-video-container:hover #watermarkLogo { opacity: 0.5; }
 
-    /* Error */
     #errorBox {
-      display: none;
-      position: absolute; inset: 0;
-      z-index: 5000;
-      background: #000;
-      align-items: center; justify-content: center;
-      color: #ff6666; font-size: 15px;
-      text-align: center; padding: 24px;
+      display: none; position: absolute; inset: 0; z-index: 5000;
+      background: #000; align-items: center; justify-content: center;
+      color: #ff6666; font-size: 15px; text-align: center; padding: 24px;
     }
   </style>
 </head>
 <body>
 
 <div class="shaka-video-container youtube-theme" data-shaka-player>
-
-  <!-- Video element — NO autoplay attribute. We play() programmatically on click. -->
   <video playsinline preload="auto"
     poster="https://blogger.googleusercontent.com/img/a/AVvXsEiGqaZeRBZ6Y7yV5ZYSRiNRhBa5q9_EMx7R5TJcHd3XJwwHh2YhNOGt76Y4vEcUIjvIaA7W-Tw1RyMLP-4WZwVHA4mk18zwXl7HdSL5WabprIasDOWJO7jpL0zTQB4p_y7X0Rv0xwe-cJ-GvxofAgeRp2FIiNgB90n_b8Cqw0sAaZqVhJg_fi9UyfSO8KY">
   </video>
 
-  <!-- Click-to-play overlay -->
   <div id="playOverlay">
     <div class="ring" id="loadRing"></div>
     <div id="playBtn">
@@ -229,19 +188,25 @@
   <img id="watermarkLogo"
     src="https://i.postimg.cc/J4m9Dz70/Gemini-Generated-Image-4zvnud4zvnud4zvn-Picsart-Background-Remover.png" alt="">
   <div id="errorBox"></div>
-
 </div>
 
 <script>
-  /* ── Params ── */
-  const params       = new URLSearchParams(window.location.search);
-  const streamUrl    = params.get('url');
-  const keyId        = params.get('keyId');
-  const key          = params.get('key');
-  const cookieHeader = params.get('cookie') || '';
-  const channelName  = params.get('name')   || '';
+  // ══════════════════════════════════════════════════════════════
+  //  PRIVACY: Read params first, then IMMEDIATELY wipe the URL.
+  //  After this line the address bar shows only the clean domain.
+  //  The actual values are safely stored in JS variables in memory.
+  // ══════════════════════════════════════════════════════════════
+  const _p         = new URLSearchParams(window.location.search);
+  const streamUrl  = _p.get('url')    || '';
+  const keyId      = _p.get('keyId')  || '';
+  const key        = _p.get('key')    || '';
+  const cookie     = _p.get('cookie') || '';
+  const name       = _p.get('name')   || '';
 
-  /* ── DOM refs ── */
+  // Silently replace the browser URL with the clean path — no reload.
+  history.replaceState(null, '', window.location.pathname);
+
+  // ── DOM refs ──
   const video        = document.querySelector('video');
   const container    = document.querySelector('.shaka-video-container');
   const playOverlay  = document.getElementById('playOverlay');
@@ -250,30 +215,24 @@
   const overlayLabel = document.getElementById('overlayLabel');
   const errorBox     = document.getElementById('errorBox');
 
-  document.getElementById('channelTitle').textContent = channelName;
+  document.getElementById('channelTitle').textContent = name;
 
-  /* ── Helpers ── */
   const isInIframe = () => { try { return window.self !== window.top; } catch (_) { return true; } };
 
-  const showError = (msg) => {
-    errorBox.style.display = 'flex';
-    errorBox.textContent   = '⚠ ' + msg;
+  const showError = msg => {
+    errorBox.style.display   = 'flex';
+    errorBox.textContent     = '⚠ ' + msg;
     playOverlay.style.display = 'none';
   };
 
-  /* Swap spinner → play button once stream is ready */
   const markReady = () => {
-    loadRing.style.display = 'none';
-    playBtn.style.display  = 'flex';
+    loadRing.style.display  = 'none';
+    playBtn.style.display   = 'flex';
     overlayLabel.textContent = 'Tap to Play';
   };
 
-  /* Dismiss overlay after successful play */
-  const dismissOverlay = () => {
-    playOverlay.classList.add('fade-out');
-  };
+  const dismissOverlay = () => playOverlay.classList.add('fade-out');
 
-  /* ── Play — called from user click (works in ANY iframe context) ── */
   let streamReady = false;
 
   const doPlay = async () => {
@@ -283,61 +242,47 @@
       video.volume = 0.8;
       await video.play();
       dismissOverlay();
-    } catch (e) {
-      /* Muted fallback: some restrictive browsers still need muted first-play */
+    } catch {
       try {
         video.muted = true;
         await video.play();
         dismissOverlay();
-        console.warn('Playing muted due to browser policy. User can unmute.');
-      } catch (e2) {
-        console.error('Play failed even muted:', e2);
+      } catch {
         overlayLabel.textContent = 'Tap again to play';
       }
     }
   };
 
-  /* Bind overlay click/touch → doPlay */
   playOverlay.addEventListener('click', doPlay);
-  playOverlay.addEventListener('touchend', (e) => { e.preventDefault(); doPlay(); });
+  playOverlay.addEventListener('touchend', e => { e.preventDefault(); doPlay(); });
 
-  /* ── Fullscreen on mobile (skip in iframes to avoid SecurityError) ── */
   video.addEventListener('play', () => {
-    if (!isInIframe() && !document.fullscreenElement && window.innerWidth <= 768) {
+    if (!isInIframe() && !document.fullscreenElement && window.innerWidth <= 768)
       container.requestFullscreen().catch(() => {});
-    }
   }, { once: true });
 
-  /* ── Unmute on any interaction after muted play ── */
   let soundUnlocked = false;
-  const unlockSound = () => {
-    if (!soundUnlocked && video.muted) { video.muted = false; soundUnlocked = true; }
-  };
   ['click', 'touchstart', 'keydown'].forEach(ev =>
-    document.addEventListener(ev, unlockSound, { once: true })
+    document.addEventListener(ev, () => {
+      if (!soundUnlocked && video.muted) { video.muted = false; soundUnlocked = true; }
+    }, { once: true })
   );
 
-  /* ── Resume after tab hidden ── */
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && video.paused && streamReady) video.play().catch(() => {});
   });
 
-  /* ── postMessage API for parent page control ── */
   window.addEventListener('message', async ({ data }) => {
     if (!data?.action) return;
-    switch (data.action) {
-      case 'play':   doPlay(); break;
-      case 'pause':  video.pause(); break;
-      case 'mute':   video.muted = true; break;
-      case 'unmute': video.muted = false; break;
-      case 'volume':
-        if (typeof data.value === 'number')
-          video.volume = Math.max(0, Math.min(1, data.value));
-        break;
-    }
+    if (data.action === 'play')   doPlay();
+    if (data.action === 'pause')  video.pause();
+    if (data.action === 'mute')   video.muted = true;
+    if (data.action === 'unmute') video.muted = false;
+    if (data.action === 'volume' && typeof data.value === 'number')
+      video.volume = Math.max(0, Math.min(1, data.value));
   });
 
-  /* ── Shaka init ── */
+  // ── Shaka init ──
   document.addEventListener('DOMContentLoaded', async () => {
     shaka.polyfill.installAll();
 
@@ -349,32 +294,29 @@
 
     ui.configure({
       controlPanelElements: [
-        'play_pause', 'time_and_duration', 'mute', 'volume', 'spacer',
-        'captions', 'quality', 'language', 'picture_in_picture', 'fullscreen', 'overflow_menu'
+        'play_pause','time_and_duration','mute','volume','spacer',
+        'captions','quality','language','picture_in_picture','fullscreen','overflow_menu'
       ]
     });
 
-    /* DRM */
-    if (keyId && key) player.configure({ drm: { clearKeys: { [keyId]: key } } });
+    if (keyId && key)
+      player.configure({ drm: { clearKeys: { [keyId]: key } } });
 
-    /* Network filter */
     player.getNetworkingEngine().registerRequestFilter((type, request) => {
       request.headers['Referer']    = 'https://www.jiotv.com/';
       request.headers['User-Agent'] = 'plaYtv/7.1.5 (Linux;Android 13) ExoPlayerLib/2.11.6';
-      if (cookieHeader) {
-        request.headers['Cookie'] = cookieHeader;
+      if (cookie) {
+        request.headers['Cookie'] = cookie;
         if (
           (type === shaka.net.NetworkingEngine.RequestType.MANIFEST ||
            type === shaka.net.NetworkingEngine.RequestType.SEGMENT) &&
           !request.uris[0].includes('__hdnea__=')
         ) {
-          const sep = request.uris[0].includes('?') ? '&' : '?';
-          request.uris[0] += sep + cookieHeader;
+          request.uris[0] += (request.uris[0].includes('?') ? '&' : '?') + cookie;
         }
       }
     });
 
-    /* Streaming config */
     player.configure({
       streaming: {
         lowLatencyMode: true, bufferingGoal: 15, rebufferingGoal: 2, bufferBehind: 15,
@@ -386,21 +328,17 @@
 
     player.addEventListener('error', e => console.error('Shaka error:', e.detail));
 
-    /* Load stream (no play() here — wait for user click) */
     try {
       await player.load(streamUrl);
       streamReady = true;
 
-      /* Try silent muted autoplay as a bonus.
-         If the browser allows it, great — we hide the overlay.
-         If blocked (common in iframes), the overlay stays for the user to click. */
+      // Try silent muted autoplay — works in non-iframe contexts
       try {
         video.muted = true;
         await video.play();
-        console.log('Silent muted autoplay success');
         dismissOverlay();
-      } catch (_) {
-        /* Expected in cross-origin iframes — overlay stays, user clicks to play */
+      } catch {
+        // Blocked by browser (common in iframes) — show tap-to-play button
         markReady();
       }
 
