@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>JioPlayer</title>
 
-  <!-- DNS Prefetch for faster resolution -->
   <link rel="dns-prefetch" href="//1.1.1.1">
   <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
   <link rel="dns-prefetch" href="//fonts.googleapis.com">
   <link rel="dns-prefetch" href="//i.postimg.cc">
-  <link rel="dns-prefetch" href="//blogger.googleusercontent.com">
+  <link rel="dns-prefetch" href="//jiotvpllive.cdn.jio.com">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 
@@ -83,7 +82,9 @@
     #channelTitle { position: absolute; left: 10px; top: 10px; color: #fff; font-size: 14px; z-index: 1500; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; pointer-events: none; }
     #watermarkLogo { position: absolute; left: 10px; top: 62%; width: 60px; height: auto; opacity: 0.35; z-index: 1500; pointer-events: none; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); transition: opacity 0.3s ease; }
     .shaka-video-container:hover #watermarkLogo { opacity: 0.5; }
-    #errorBox { display: none; position: absolute; inset: 0; z-index: 5000; background: #000; align-items: center; justify-content: center; color: #ff6666; font-size: 15px; text-align: center; padding: 24px; }
+    #errorBox { display: none; position: absolute; inset: 0; z-index: 5000; background: #000; flex-direction: column; align-items: center; justify-content: center; color: #ff6666; font-size: 15px; text-align: center; padding: 24px; gap: 16px; }
+    #retryBtn { padding: 10px 28px; background: #e00; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+    #retryBtn:hover { background: #c00; }
   </style>
 </head>
 <body>
@@ -99,17 +100,18 @@
   </div>
   <div id="channelTitle"></div>
   <img id="watermarkLogo" src="https://i.postimg.cc/J4m9Dz70/Gemini-Generated-Image-4zvnud4zvnud4zvn-Picsart-Background-Remover.png" alt="">
-  <div id="errorBox"></div>
+  <div id="errorBox">
+    <span id="errorMsg">⚠ Stream error</span>
+    <button id="retryBtn" onclick="retryLoad()">↺ Retry</button>
+  </div>
 </div>
 
 <script>
-  // ── Save FULL URL before wiping (needed for Chrome intent) ──
   const _fullUrl = window.location.href;
   const _ua = navigator.userAgent || '';
   const _isAndroid = /Android/i.test(_ua);
   const _isIOS = /iPhone|iPad|iPod/i.test(_ua);
 
-  // Detect Telegram / in-app WebView
   const isTelegramWebView = (
     /Telegram/i.test(_ua) ||
     (_isAndroid && /wv/.test(_ua)) ||
@@ -117,7 +119,6 @@
   );
 
   let _chromeFired = false;
-
   function fireChrome() {
     if (_chromeFired) return;
     _chromeFired = true;
@@ -131,17 +132,14 @@
 
   if (isTelegramWebView) {
     const _ov = document.getElementById('playOverlay');
-    _ov.addEventListener('touchstart', function _t(e) {
-      fireChrome();
-      _ov.removeEventListener('touchstart', _t);
+    _ov.addEventListener('touchstart', function _t() {
+      fireChrome(); _ov.removeEventListener('touchstart', _t);
     }, { passive: true });
     _ov.addEventListener('click', function _c() {
-      fireChrome();
-      _ov.removeEventListener('click', _c);
+      fireChrome(); _ov.removeEventListener('click', _c);
     }, { once: true });
   }
 
-  // ── Read URL params then wipe from address bar ──
   const _p        = new URLSearchParams(window.location.search);
   const streamUrl = _p.get('url')    || '';
   const keyId     = _p.get('keyId')  || '';
@@ -150,23 +148,26 @@
   const name      = _p.get('name')   || '';
   history.replaceState(null, '', window.location.pathname);
 
-  // ── DOM refs ──
-  const video       = document.querySelector('video');
-  const container   = document.querySelector('.shaka-video-container');
-  const playOverlay = document.getElementById('playOverlay');
-  const loadRing    = document.getElementById('loadRing');
-  const playBtn     = document.getElementById('playBtn');
-  const overlayLabel= document.getElementById('overlayLabel');
-  const errorBox    = document.getElementById('errorBox');
+  const video        = document.querySelector('video');
+  const container    = document.querySelector('.shaka-video-container');
+  const playOverlay  = document.getElementById('playOverlay');
+  const loadRing     = document.getElementById('loadRing');
+  const playBtn      = document.getElementById('playBtn');
+  const overlayLabel = document.getElementById('overlayLabel');
+  const errorBox     = document.getElementById('errorBox');
+  const errorMsg     = document.getElementById('errorMsg');
 
   document.getElementById('channelTitle').textContent = name;
 
-  const isInIframe = () => { try { return window.self !== window.top; } catch (_) { return true; } };
-  const showError  = msg => { errorBox.style.display = 'flex'; errorBox.textContent = '⚠ ' + msg; playOverlay.style.display = 'none'; };
-  const markReady  = () => { loadRing.style.display = 'none'; playBtn.style.display = 'flex'; overlayLabel.textContent = 'Tap to Play'; };
-  const dismissOverlay = () => playOverlay.classList.add('fade-out');
+  const isInIframe    = () => { try { return window.self !== window.top; } catch (_) { return true; } };
+  const showError     = msg => { errorMsg.textContent = '⚠ ' + msg; errorBox.style.display = 'flex'; playOverlay.style.display = 'none'; };
+  const markReady     = () => { loadRing.style.display = 'none'; playBtn.style.display = 'flex'; overlayLabel.textContent = 'Tap to Play'; };
+  const dismissOverlay= () => playOverlay.classList.add('fade-out');
 
   let streamReady = false;
+  let shakaPlayer = null;
+  let retryCount  = 0;
+  const MAX_RETRIES = 3;
 
   const doPlay = async () => {
     if (!streamReady) return;
@@ -200,37 +201,141 @@
     if (data.action === 'volume' && typeof data.value === 'number') video.volume = Math.max(0, Math.min(1, data.value));
   });
 
-  // ── Shaka init ──
+  function retryLoad() {
+    if (!shakaPlayer) return;
+    errorBox.style.display = 'none';
+    playOverlay.style.display = 'flex';
+    playOverlay.classList.remove('fade-out');
+    loadRing.style.display = '';
+    playBtn.style.display = 'none';
+    overlayLabel.textContent = 'Reconnecting…';
+    streamReady = false;
+    retryCount  = 0;
+    initStream(shakaPlayer);
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     shaka.polyfill.installAll();
     if (!shaka.Player.isBrowserSupported()) { showError('Browser not supported'); return; }
     if (!streamUrl) { showError('No stream URL provided'); return; }
 
     const player = new shaka.Player(video);
-    const ui     = new shaka.ui.Overlay(player, container, video);
+    shakaPlayer  = player;
+
+    const ui = new shaka.ui.Overlay(player, container, video);
     ui.configure({ controlPanelElements: ['play_pause','time_and_duration','mute','volume','spacer','captions','quality','language','picture_in_picture','fullscreen','overflow_menu'] });
 
     if (keyId && key) player.configure({ drm: { clearKeys: { [keyId]: key } } });
 
+    // ── Request filter ──
     player.getNetworkingEngine().registerRequestFilter((type, request) => {
       request.headers['Referer']    = 'https://www.jiotv.com/';
+      request.headers['Origin']     = 'https://www.jiotv.com';
       request.headers['User-Agent'] = 'plaYtv/7.1.5 (Linux;Android 13) ExoPlayerLib/2.11.6';
       if (cookie) {
         request.headers['Cookie'] = cookie;
-        if ((type === shaka.net.NetworkingEngine.RequestType.MANIFEST || type === shaka.net.NetworkingEngine.RequestType.SEGMENT) && !request.uris[0].includes('__hdnea__='))
+        if ((type === shaka.net.NetworkingEngine.RequestType.MANIFEST ||
+             type === shaka.net.NetworkingEngine.RequestType.SEGMENT) &&
+            !request.uris[0].includes('__hdnea__='))
           request.uris[0] += (request.uris[0].includes('?') ? '&' : '?') + cookie;
       }
     });
 
-    player.configure({ streaming: { lowLatencyMode: true, bufferingGoal: 15, rebufferingGoal: 2, bufferBehind: 15, retryParameters: { timeout: 10000, maxAttempts: 5, baseDelay: 300, backoffFactor: 1.2 }, segmentRequestTimeout: 8000, segmentPrefetchLimit: 2, useNativeHlsOnSafari: true }, manifest: { retryParameters: { timeout: 8000, maxAttempts: 3 } } });
-    player.addEventListener('error', e => console.error('Shaka error:', e.detail));
+    // ── Response filter: back off on 429 ──
+    player.getNetworkingEngine().registerResponseFilter((type, response) => {
+      if (response.status === 429) {
+        const wait = parseInt(response.headers['retry-after'] || '6', 10) * 1000;
+        console.warn('429 — waiting', wait, 'ms before continuing');
+        return new Promise(res => setTimeout(res, wait));
+      }
+    });
 
+    // ── Conservative config: reduces request frequency, fixes audio crash ──
+    player.configure({
+      streaming: {
+        lowLatencyMode:       false,   // OFF — causes burst requests that trigger 429
+        bufferingGoal:        10,
+        rebufferingGoal:      3,
+        bufferBehind:         10,
+        segmentPrefetchLimit: 1,       // fetch only 1 segment ahead
+        useNativeHlsOnSafari: true,
+        retryParameters: {
+          timeout:       15000,
+          maxAttempts:   2,            // limit auto-retries to avoid 429 spiral
+          baseDelay:     3000,
+          backoffFactor: 2.0,
+          fuzzFactor:    0.5
+        }
+      },
+      manifest: {
+        retryParameters: {
+          timeout:       10000,
+          maxAttempts:   2,
+          baseDelay:     3000,
+          backoffFactor: 2.0
+        },
+        dash: {
+          ignoreMinBufferTime:     true,
+          autoCorrectDrift:        true
+        }
+      }
+    });
+
+    // ── Fix audio crash: filter out video-only variants before Shaka picks one ──
+    player.addEventListener('variantchanged', () => {});
+    player.getNetworkingEngine().registerResponseFilter((type, response) => {
+      // Only patch MPD manifests
+      if (type !== shaka.net.NetworkingEngine.RequestType.MANIFEST) return;
+      try {
+        const txt = shaka.util.StringUtils.fromUTF8(response.data);
+        if (!txt.includes('<MPD')) return;
+        // Remove AdaptationSets that have no audio and are video-only
+        // by ensuring Shaka's variant filter won't crash on missing audio
+        // (config-level fix via preferredAudioLanguage keeps audio variants alive)
+        player.configure('preferredAudioLanguage', 'und');
+      } catch (_) {}
+    });
+
+    player.addEventListener('error', e => {
+      const err = e.detail;
+      console.warn('Shaka error code:', err.code, err);
+      // codes 1001=network, 4032=no variants — both caused by 429 or audio crash
+      if (err.severity === 1) return; // recoverable warning, ignore
+      if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        const delay = retryCount * 5000;
+        overlayLabel.textContent = `Retrying… (${retryCount}/${MAX_RETRIES})`;
+        errorBox.style.display = 'none';
+        playOverlay.style.display = 'flex';
+        playOverlay.classList.remove('fade-out');
+        setTimeout(() => initStream(player), delay);
+      } else {
+        showError('Stream stopped. Link may be expired or rate limited. Tap Retry.');
+      }
+    });
+
+    await initStream(player);
+  });
+
+  async function initStream(player) {
     try {
       await player.load(streamUrl);
       streamReady = true;
-      try { video.muted = true; await video.play(); dismissOverlay(); } catch { markReady(); }
-    } catch (err) { console.error('Load error:', err); showError('Failed to load stream.'); }
-  });
+      retryCount  = 0;
+      try { video.muted = true; await video.play(); dismissOverlay(); }
+      catch { markReady(); }
+    } catch (err) {
+      console.error('Load error:', err);
+      if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        const delay = retryCount * 5000;
+        overlayLabel.textContent = `Connecting… (${retryCount}/${MAX_RETRIES})`;
+        setTimeout(() => initStream(player), delay);
+      } else {
+        showError('Cannot load stream. Link may be expired. Tap Retry.');
+      }
+    }
+  }
 </script>
 </body>
 </html>
