@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>JioPlayer</title>
+
+  <!-- DNS Prefetch for faster resolution -->
+  <link rel="dns-prefetch" href="//1.1.1.1">
+  <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+  <link rel="dns-prefetch" href="//fonts.googleapis.com">
+  <link rel="dns-prefetch" href="//i.postimg.cc">
+  <link rel="dns-prefetch" href="//blogger.googleusercontent.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp">
@@ -92,9 +102,6 @@
   <div id="errorBox"></div>
 </div>
 
-
-
-
 <script>
   // ── Save FULL URL before wiping (needed for Chrome intent) ──
   const _fullUrl = window.location.href;
@@ -115,17 +122,13 @@
     if (_chromeFired) return;
     _chromeFired = true;
     if (_isAndroid) {
-      // Android Intent — opens Chrome directly, no popup
       window.location.href = 'intent://' + _fullUrl.replace(/^https?:\/\//, '') +
         '#Intent;scheme=https;package=com.android.chrome;end';
     } else if (_isIOS) {
-      // iOS googlechrome:// scheme
       window.location.href = _fullUrl.replace(/^https?:\/\//, 'googlechrome://');
     }
   }
 
-  // Hook: the play overlay fills 100% of screen.
-  // First touch on it = fire Chrome intent silently, then continue normally.
   if (isTelegramWebView) {
     const _ov = document.getElementById('playOverlay');
     _ov.addEventListener('touchstart', function _t(e) {
